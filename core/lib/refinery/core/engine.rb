@@ -131,6 +131,18 @@ module Refinery
         app.config.cache_store = :memory_store
       end
 
+      # See https://github.com/refinery/refinerycms/issues/1863
+      initializer "monkeypatch dragonfly to support mounted engines" do
+        Dragonfly::UrlMapper.class_eval do
+          alias_method :old_params_for, :params_for
+
+          def params_for(path, query)
+            new_path = Refinery::Core::Engine.routes.url_helpers.root_path.sub(/\/$/, "") << path
+            old_params_for(new_path, query)
+          end
+        end
+      end
+
       config.after_initialize do
         Refinery.register_extension(Refinery::Core)
       end
